@@ -243,16 +243,18 @@ def extract_data_from_pdf(pdf_file):
                     page_text = pytesseract.image_to_string(image, lang='eng+jpn')
                     
                     # デバッグ用：OCRテキストをログに記録（表示しない）
-                    if i == 0:  # 最初のページのみ
-                        print(f"OCR抽出テキスト（最初の100文字）: {page_text[:100]}...")
+                    print(f"=== ページ {i+1} OCR抽出テキスト ===")
+                    print(f"全テキスト: {page_text}")
+                    print(f"=== ページ {i+1} 終了 ===")
                     
                     if page_text and page_text.strip():
                         lines = page_text.split('\n')
                         
-                        for line in lines:
+                        for line_num, line in enumerate(lines):
                             cleaned_line = re.sub(r'\s+', ' ', line).strip()
                             
                             if cleaned_line:
+                                print(f"ページ {i+1}, 行 {line_num+1}: '{cleaned_line}'")
                                 for item in TARGET_ITEMS_27:
                                     # 基本的な検索（完全一致）
                                     if cleaned_line.startswith(item):
@@ -358,6 +360,13 @@ def extract_data_from_pdf(pdf_file):
                 finally:
                     doc.close()
                 
+                # デバッグ用：ページデータの内容を確認
+                print(f"=== ページ {i+1} 抽出結果 ===")
+                print(f"抽出された項目数: {len(page_data)}")
+                for key, value in page_data.items():
+                    print(f"  {key}: '{value}'")
+                print(f"=== ページ {i+1} 抽出結果終了 ===")
+                
                 if page_data:
                     all_pages_data.append(page_data)
         
@@ -366,6 +375,14 @@ def extract_data_from_pdf(pdf_file):
         
         progress_bar.progress(1.0)
         status_text.text("データ抽出完了！")
+        
+        # デバッグ用：最終結果の確認
+        print("=== 最終抽出結果 ===")
+        for page_num, page_data in enumerate(all_pages_data):
+            print(f"ページ {page_num+1}:")
+            for key, value in page_data.items():
+                print(f"  {key}: '{value}'")
+        print("=== 最終抽出結果終了 ===")
         
         return all_pages_data
         
