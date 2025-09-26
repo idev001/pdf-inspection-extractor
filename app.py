@@ -242,9 +242,9 @@ def extract_data_from_pdf(pdf_file):
                     # 英語と日本語の両方でOCRを試行
                     page_text = pytesseract.image_to_string(image, lang='eng+jpn')
                     
-                    # デバッグ用：OCRテキストを表示（最初の100文字のみ）
+                    # デバッグ用：OCRテキストをログに記録（表示しない）
                     if i == 0:  # 最初のページのみ
-                        st.info(f"OCR抽出テキスト（最初の100文字）: {page_text[:100]}...")
+                        print(f"OCR抽出テキスト（最初の100文字）: {page_text[:100]}...")
                     
                     if page_text and page_text.strip():
                         lines = page_text.split('\n')
@@ -256,8 +256,8 @@ def extract_data_from_pdf(pdf_file):
                                 for item in TARGET_ITEMS_27:
                                     # 基本的な検索（完全一致）
                                     if cleaned_line.startswith(item):
-                                        # デバッグ用：抽出された行を表示
-                                        st.write(f"✅ 抽出: {item} - {cleaned_line}")
+                                        # デバッグ用：抽出された行をログに記録（表示しない）
+                                        print(f"✅ 抽出: {item} - {cleaned_line}")
                                         value_text = cleaned_line[len(item):].strip()
                                         value_text = re.sub(r'^[:：\s]+', '', value_text)
                                         
@@ -287,8 +287,8 @@ def extract_data_from_pdf(pdf_file):
                                     
                                     # 部分一致検索（OCR誤認識対応）
                                     elif item in cleaned_line and len(item) > 3:
-                                        # デバッグ用：部分一致で抽出された行を表示
-                                        st.write(f"🔍 部分一致: {item} - {cleaned_line}")
+                                        # デバッグ用：部分一致で抽出された行をログに記録（表示しない）
+                                        print(f"🔍 部分一致: {item} - {cleaned_line}")
                                         # 項目名の前後から値を抽出
                                         pattern = rf'.*?{re.escape(item)}[:\s]*([^\n\r]+)'
                                         match = re.search(pattern, cleaned_line, re.IGNORECASE)
@@ -310,13 +310,40 @@ def extract_data_from_pdf(pdf_file):
                                                     page_data[item] = processed_value
                                         break
                                     
-                                    # ShipNo.の特別な処理（Ship No.としても検索）
-                                    elif item == 'ShipNo.' and re.search(r'Ship\s*No\.?\s*', cleaned_line, re.IGNORECASE):
-                                        match = re.search(r'Ship\s*No\.?\s*[:\s]*([^\n\r]+)', cleaned_line, re.IGNORECASE)
-                                        if match:
-                                            value_text = match.group(1).strip()
-                                            processed_value = process_value(item, value_text)
-                                            page_data[item] = processed_value
+                                    # ShipNo.の特別な処理（複数のパターンに対応）
+                                    elif item == 'ShipNo.':
+                                        # パターン1: "Ship No." または "ShipNo."
+                                        ship_patterns = [
+                                            r'Ship\s*No\.?\s*[:\s]*([^\n\r]+)',
+                                            r'ShipNo\.?\s*[:\s]*([^\n\r]+)',
+                                            r'Ship\s*Number\s*[:\s]*([^\n\r]+)'
+                                        ]
+                                        for pattern in ship_patterns:
+                                            match = re.search(pattern, cleaned_line, re.IGNORECASE)
+                                            if match:
+                                                value_text = match.group(1).strip()
+                                                processed_value = process_value(item, value_text)
+                                                page_data[item] = processed_value
+                                                print(f"✅ ShipNo.抽出: {value_text}")
+                                                break
+                                        break
+                                    
+                                    # Kind of Materialの特別な処理（複数のパターンに対応）
+                                    elif item == 'Kind of Material':
+                                        material_patterns = [
+                                            r'Kind\s+of\s+Material\s*[:\s]*([^\n\r]+)',
+                                            r'Material\s+Kind\s*[:\s]*([^\n\r]+)',
+                                            r'Material\s*[:\s]*([^\n\r]+)',
+                                            r'Kind\s+Material\s*[:\s]*([^\n\r]+)'
+                                        ]
+                                        for pattern in material_patterns:
+                                            match = re.search(pattern, cleaned_line, re.IGNORECASE)
+                                            if match:
+                                                value_text = match.group(1).strip()
+                                                processed_value = process_value(item, value_text)
+                                                page_data[item] = processed_value
+                                                print(f"✅ Kind of Material抽出: {value_text}")
+                                                break
                                         break
                                     
                                     # Dry bulb Tempの特別な処理（Dry bulb Temp.としても検索）
