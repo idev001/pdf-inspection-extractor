@@ -1,0 +1,17 @@
+# 一時ファイル
+*.tmp
+*.temp
+*.log
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
+
+# IDE設定
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
