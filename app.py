@@ -311,7 +311,7 @@ def extract_data_from_pdf(pdf_file):
                                         break
                                     
                                     # ShipNo.の特別な処理（複数のパターンに対応）
-                                    elif item == 'ShipNo.':
+                                    if item == 'ShipNo.' and not page_data.get(item):
                                         # パターン1: "Ship No." または "ShipNo."
                                         ship_patterns = [
                                             r'Ship\s*No\.?\s*[:\s]*([^\n\r]+)',
@@ -326,10 +326,9 @@ def extract_data_from_pdf(pdf_file):
                                                 page_data[item] = processed_value
                                                 print(f"✅ ShipNo.抽出: {value_text}")
                                                 break
-                                        break
                                     
                                     # Kind of Materialの特別な処理（複数のパターンに対応）
-                                    elif item == 'Kind of Material':
+                                    if item == 'Kind of Material' and not page_data.get(item):
                                         material_patterns = [
                                             r'Kind\s+of\s+Material\s*[:\s]*([^\n\r]+)',
                                             r'Material\s+Kind\s*[:\s]*([^\n\r]+)',
@@ -344,10 +343,9 @@ def extract_data_from_pdf(pdf_file):
                                                 page_data[item] = processed_value
                                                 print(f"✅ Kind of Material抽出: {value_text}")
                                                 break
-                                        break
                                     
                                     # Dry bulb Tempの特別な処理（Dry bulb Temp.としても検索）
-                                    elif item == 'Dry bulb Temp' and re.search(r'Dry\s+bulb\s+Temp\.?\s*', cleaned_line, re.IGNORECASE):
+                                    if item == 'Dry bulb Temp' and re.search(r'Dry\s+bulb\s+Temp\.?\s*', cleaned_line, re.IGNORECASE):
                                         match = re.search(r'Dry\s+bulb\s+Temp\.?\s*[:\s]*([^\n\r]+)', cleaned_line, re.IGNORECASE)
                                         if match:
                                             value_text = match.group(1).strip()
