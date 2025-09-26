@@ -239,7 +239,12 @@ def extract_data_from_pdf(pdf_file):
                 
                 # OCRでテキストを抽出
                 try:
-                    page_text = pytesseract.image_to_string(image, lang='eng')
+                    # 英語と日本語の両方でOCRを試行
+                    page_text = pytesseract.image_to_string(image, lang='eng+jpn')
+                    
+                    # デバッグ用：OCRテキストを表示（最初の100文字のみ）
+                    if i == 0:  # 最初のページのみ
+                        st.info(f"OCR抽出テキスト（最初の100文字）: {page_text[:100]}...")
                     
                     if page_text and page_text.strip():
                         lines = page_text.split('\n')
@@ -249,8 +254,10 @@ def extract_data_from_pdf(pdf_file):
                             
                             if cleaned_line:
                                 for item in TARGET_ITEMS_27:
-                                    # 基本的な検索
+                                    # 基本的な検索（完全一致）
                                     if cleaned_line.startswith(item):
+                                        # デバッグ用：抽出された行を表示
+                                        st.write(f"✅ 抽出: {item} - {cleaned_line}")
                                         value_text = cleaned_line[len(item):].strip()
                                         value_text = re.sub(r'^[:：\s]+', '', value_text)
                                         
@@ -276,6 +283,31 @@ def extract_data_from_pdf(pdf_file):
                                                 page_data[f"{item}_2"] = ""
                                             else:
                                                 page_data[item] = ""
+                                        break
+                                    
+                                    # 部分一致検索（OCR誤認識対応）
+                                    elif item in cleaned_line and len(item) > 3:
+                                        # デバッグ用：部分一致で抽出された行を表示
+                                        st.write(f"🔍 部分一致: {item} - {cleaned_line}")
+                                        # 項目名の前後から値を抽出
+                                        pattern = rf'.*?{re.escape(item)}[:\s]*([^\n\r]+)'
+                                        match = re.search(pattern, cleaned_line, re.IGNORECASE)
+                                        if match:
+                                            value_text = match.group(1).strip()
+                                            value_text = re.sub(r'^[:：\s]+', '', value_text)
+                                            
+                                            if value_text:
+                                                processed_value = process_value(item, value_text)
+                                                if item == 'Weather':
+                                                    if '/' in processed_value:
+                                                        weather_parts = processed_value.split('/')
+                                                        page_data[f"{item}_1"] = weather_parts[0] if len(weather_parts) > 0 else ""
+                                                        page_data[f"{item}_2"] = weather_parts[1] if len(weather_parts) > 1 else ""
+                                                    else:
+                                                        page_data[f"{item}_1"] = processed_value
+                                                        page_data[f"{item}_2"] = ""
+                                                else:
+                                                    page_data[item] = processed_value
                                         break
                                     
                                     # ShipNo.の特別な処理（Ship No.としても検索）
